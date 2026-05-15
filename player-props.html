@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROPHET // PLAYER PROPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-top: #1a1c2e;
+            --bg-bottom: #09090b;
+            --card-bg: rgba(23, 23, 37, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at 50% 0%, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            background-attachment: fixed;
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .player-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            padding-top: 50px;
+            min-height: 520px;
+        }
+        .card-glow {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 80%; height: 80%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            z-index: -1;
+            transition: opacity 0.5s ease;
+        }
+        .player-card:hover .card-glow { opacity: 0.4; }
+        .player-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.6);
+        }
+        .player-img {
+            position: absolute;
+            top: -20px;
+            right: -10px;
+            width: 160px;
+            height: auto;
+            filter: drop-shadow(-10px 10px 15px rgba(0,0,0,0.5));
+            transition: transform 0.5s ease;
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+        }
+        .player-card:hover .player-img { transform: scale(1.1) translateX(-5px); }
+        .value-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+            color: white;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 6px 16px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: inline-block;
+        }
+        .quality-badge {
+            font-size: 9px;
+            font-weight: 900;
+            padding: 5px 10px;
+            border-radius: 999px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+        }
+        .bar-container {
+            height: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            padding: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 20px;
+            width: 0%;
+            transition: width 2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 15px currentColor;
+        }
+        .back-btn, .filter-btn, .select-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .back-btn:hover, .filter-btn:hover, .filter-btn.active { background: white; color: black; transform: scale(1.03); }
+        .select-box { color: white; }
+        .select-box option { color: black; }
+    </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<header class="max-w-7xl mx-auto px-10 pt-16 pb-8 flex justify-between items-center">
+    <a href="index.html" class="back-btn px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M6.85355 3.14645C6.65829 2.95118 6.34171 2.95118 6.14645 3.14645L2.14645 7.14645C1.95118 7.34171 1.95118 7.65829 2.14645 7.85355L6.14645 11.8536C6.34171 12.0488 6.65829 12.0488 6.85355 11.8536C7.04882 11.6583 7.04882 11.3417 6.85355 11.1464L3.20711 7.5L6.85355 3.85355C7.04882 3.65829 7.04882 3.34171 6.85355 3.14645Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path><path d="M2.5 7.5C2.5 7.22386 2.72386 7 3 7H13C13.2761 7 13.5 7.22386 13.5 7.5C13.5 7.77614 13.2761 8 13 8H3C2.72386 8 2.5 7.77614 2.5 7.5Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+        Dashboard
+    </a>
+    <div class="text-right">
+        <h1 class="text-3xl font-black tracking-tighter italic">PLAYER <span class="text-blue-500 font-normal">/</span> PROPS</h1>
+        <p class="text-[8px] font-bold text-slate-500 tracking-[0.5em] uppercase mt-1" id="matchup-title">ALL MATCHUPS</p>
+    </div>
+</header>
+
+<section class="max-w-7xl mx-auto px-10 pb-10 flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+    <div class="flex flex-wrap gap-3" id="market-filters">
+        <button class="filter-btn active px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="ALL">All</button>
+        <button class="filter-btn px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="POINTS">Points</button>
+        <button class="filter-btn px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="REBOUNDS">Rebounds</button>
+        <button class="filter-btn px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="ASSISTS">Assists</button>
+        <button class="filter-btn px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="VALUE">Value Only</button>
+    </div>
+    <select id="sort-select" class="select-box rounded-2xl px-5 py-3 font-black text-[10px] uppercase tracking-widest outline-none">
+        <option value="edge">Sort: Highest Edge</option>
+        <option value="prob">Sort: Highest Probability</option>
+        <option value="player">Sort: Player A-Z</option>
+        <option value="line">Sort: Line</option>
+    </select>
+</section>
+
+<main class="max-w-7xl mx-auto px-10 pb-32" id="main-container">
+    <h2 class="text-slate-500 text-center font-bold">Lade Prophet Engine...</h2>
+</main>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchParam = urlParams.get('match') || '';
+    const playingTeams = matchParam ? matchParam.toLowerCase().split('-vs-') : [];
+    let allProps = [];
+    let activeFilter = 'ALL';
+
+    document.getElementById('matchup-title').innerText = matchParam ? matchParam.replace('-vs-', ' VS ').toUpperCase() : 'ALL MATCHUPS';
+    document.addEventListener('DOMContentLoaded', init);
+
+    async function init() {
+        document.querySelectorAll('[data-filter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeFilter = btn.dataset.filter;
+                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderDashboard();
+            });
+        });
+        document.getElementById('sort-select').addEventListener('change', renderDashboard);
+        await fetchData();
+    }
+
+    async function fetchData() {
+        try {
+            const response = await fetch('props.json', { cache: 'no-store' });
+            if (!response.ok) throw new Error('props.json fehlt');
+            const data = await response.json();
+            allProps = Array.isArray(data) ? data : [];
+            renderDashboard();
+        } catch (error) {
+            document.getElementById('main-container').innerHTML = `<h2 class="text-red-500 text-center font-bold">Fehler: ${error.message}. Starte zuerst PlayerPropsPuller.</h2>`;
+        }
+    }
+
+    function getVisibleProps() {
+        let props = [...allProps];
+        if (playingTeams.length > 0) {
+            props = props.filter(prop => playingTeams.includes(String(prop.teamAbbr || '').toLowerCase()));
+        }
+        if (activeFilter === 'VALUE') props = props.filter(prop => prop.isValue);
+        else if (activeFilter !== 'ALL') props = props.filter(prop => String(prop.market || '').toUpperCase() === activeFilter);
+
+        const sortMode = document.getElementById('sort-select').value;
+        props.sort((a, b) => {
+            if (sortMode === 'edge') return Number(b.edge || -999) - Number(a.edge || -999);
+            if (sortMode === 'prob') return Number(b.prophetProb || 0) - Number(a.prophetProb || 0);
+            if (sortMode === 'player') return String(a.playerName || '').localeCompare(String(b.playerName || ''));
+            if (sortMode === 'line') return Number(b.propLine || 0) - Number(a.propLine || 0);
+            return 0;
+        });
+        return props;
+    }
+
+    function renderDashboard() {
+        const container = document.getElementById('main-container');
+        container.innerHTML = '';
+        const data = getVisibleProps();
+
+        if (data.length === 0) {
+            container.innerHTML = `<div class="text-center text-slate-500 font-bold tracking-widest mt-10">NO PROP DATA AVAILABLE.</div>`;
+            return;
+        }
+
+        const section = document.createElement('div');
+        section.className = 'mb-20';
+        section.innerHTML = `
+            <div class="flex items-center justify-between mb-10">
+                <div class="flex items-center gap-4">
+                    <div class="h-[2px] w-12 bg-slate-800"></div>
+                    <h2 class="text-xs font-black text-slate-500 uppercase tracking-[0.4em]">${data.length} Predictions</h2>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="props-grid"></div>
+        `;
+        container.appendChild(section);
+
+        const grid = document.getElementById('props-grid');
+        data.forEach((prop, index) => grid.appendChild(createCard(prop, index)));
+    }
+
+    function createCard(prop, index) {
+        const card = document.createElement('div');
+        card.className = 'player-card group';
+
+        const prob = Number(prop.prophetProb || 0);
+        const probText = `${prob.toFixed(1)}%`;
+        const edge = Number(prop.edge || 0);
+        const market = String(prop.market || '').toUpperCase();
+        const line = Number(prop.propLine || 0).toFixed(1);
+        const l5Stat = formatNumber(prop.l5Average);
+        const seasonStat = formatNumber(prop.seasonAverage);
+        const projected = formatNumber(prop.projectedStat);
+        const quality = String(prop.dataQuality || 'LOW').toUpperCase();
+        const qualityColor = quality === 'HIGH' ? 'text-emerald-300' : (quality === 'MEDIUM' ? 'text-amber-300' : 'text-red-300');
+        const playerId = prop.playerId || '0';
+        const teamAbbr = prop.teamAbbr || 'nba';
+        const color = prop.color || '#3b82f6';
+
+        card.innerHTML = `
+            <div class="card-glow" style="background-color: ${color}"></div>
+            <img src="https://a.espncdn.com/i/headshots/nba/players/full/${playerId}.png" class="player-img" alt="${escapeHtml(prop.playerName)}" onerror="this.style.display='none'">
+            <div class="relative z-10 flex flex-col h-full">
+                <div class="mb-14">
+                    <div class="flex items-center gap-3 mb-4">
+                        ${prop.isValue ? '<div class="value-badge">Edge Found</div>' : '<div class="quality-badge text-slate-400">No Edge</div>'}
+                        <div class="quality-badge ${qualityColor}">${quality}</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <img src="https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/${teamAbbr}.png" class="w-8 h-8 drop-shadow-md" onerror="this.style.display='none'">
+                        <h3 class="text-xl font-black uppercase tracking-tighter leading-tight w-2/3">${escapeHtml(prop.playerName || 'Unknown')}</h3>
+                    </div>
+                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-4">${escapeHtml(prop.matchup || '')}</p>
+                </div>
+                <div class="bg-black/30 border border-white/5 rounded-2xl p-5 mb-6 backdrop-blur-md">
+                    <span class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Target Line</span>
+                    <span class="block text-2xl font-black text-white italic tracking-tighter">OVER ${line} ${market}</span>
+                    <div class="grid grid-cols-2 gap-3 mt-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        <span>Odds <b class="text-slate-300">${Number(prop.bookieOdds || 0).toFixed(2)}</b></span>
+                        <span>Fair <b class="text-slate-300">${formatNumber(prop.fairBookieProbability)}%</b></span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mb-6 text-center">
+                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3">
+                        <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest">L5</p>
+                        <p class="text-sm font-black">${l5Stat}</p>
+                    </div>
+                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3">
+                        <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest">Season</p>
+                        <p class="text-sm font-black">${seasonStat}</p>
+                    </div>
+                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3">
+                        <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest">Proj</p>
+                        <p class="text-sm font-black">${projected}</p>
+                    </div>
+                </div>
+                <div class="mt-auto">
+                    <div class="flex justify-between items-end mb-3">
+                        <div>
+                            <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Hit Prob.</span>
+                            <span class="block text-[10px] font-black ${edge >= 0 ? 'text-emerald-300' : 'text-red-300'} uppercase tracking-widest">Edge ${edge >= 0 ? '+' : ''}${edge.toFixed(1)}%</span>
+                        </div>
+                        <span class="text-4xl font-black italic tracking-tighter leading-none">${probText}</span>
+                    </div>
+                    <div class="bar-container mb-4">
+                        <div class="bar-fill" id="bar-${index}" style="width: 0%; background-color: ${color}; color: ${color}"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        setTimeout(() => {
+            const bar = document.getElementById(`bar-${index}`);
+            if (bar) bar.style.width = `${Math.min(100, Math.max(0, prob))}%`;
+        }, 400 + (index * 60));
+
+        return card;
+    }
+
+    function formatNumber(value) {
+        if (value === null || value === undefined || value === '' || Number.isNaN(Number(value))) return '-';
+        return Number(value).toFixed(1);
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+</script>
+</body>
+</html>

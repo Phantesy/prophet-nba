@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROPHET // NBA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-top: #1a1c2e;
+            --bg-bottom: #09090b;
+            --card-bg: rgba(23, 23, 37, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --high-value: #f59e0b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at 50% 0%, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            background-attachment: fixed;
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .grid-bg::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .prophet-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            min-height: 460px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        .prophet-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.5);
+        }
+        .card-shadow-glow {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 80%; height: 80%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.15;
+            z-index: -1;
+            transition: opacity 0.5s ease;
+        }
+        .prophet-card:hover .card-shadow-glow { opacity: 0.35; }
+        .value-badge {
+            background: var(--high-value);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+            color: white;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 6px 16px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: inline-block;
+        }
+        .bar-container {
+            height: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 20px;
+            width: 0;
+            transition: width 2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 20px currentColor;
+        }
+        .props-link, .stat-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .props-link { transition: all 0.4s ease; }
+        .props-link:hover {
+            background: white;
+            color: black;
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 20px 40px rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body class="grid-bg min-h-screen">
+<header class="max-w-7xl mx-auto px-10 pt-24 pb-12 flex flex-col lg:flex-row gap-10 lg:items-end lg:justify-between">
+    <div>
+        <h1 class="text-6xl font-black tracking-tighter italic">PROPHET <span class="text-blue-500 font-normal">/</span> NBA</h1>
+        <p class="text-[10px] font-bold text-slate-400 tracking-[0.7em] uppercase mt-3">Peter Secret Analytics Engine</p>
+    </div>
+    <div class="grid grid-cols-3 gap-3 min-w-[360px]">
+        <div class="stat-box rounded-2xl p-4">
+            <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Tracked</p>
+            <p id="stat-total" class="text-2xl font-black italic">-</p>
+        </div>
+        <div class="stat-box rounded-2xl p-4">
+            <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Won</p>
+            <p id="stat-won" class="text-2xl font-black italic">-</p>
+        </div>
+        <div class="stat-box rounded-2xl p-4">
+            <p class="text-[9px] font-black uppercase tracking-widest text-slate-500">Winrate</p>
+            <p id="stat-rate" class="text-2xl font-black italic">-</p>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-10">
+    <div id="status" class="mb-10 flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-slate-400">
+        <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_15px_#3b82f6]"></div>
+        Lade games.json und stats.json...
+    </div>
+
+    <div id="today-games" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12"></div>
+
+    <div class="flex justify-center mt-36 mb-32">
+        <a href="player-props.html" class="props-link px-14 py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] flex items-center gap-5">
+            Analyze Player Props
+            <svg width="20" height="20" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.14645 3.14645C8.34171 2.95118 8.65829 2.95118 8.85355 3.14645L12.8536 7.14645C13.0488 7.34171 13.0488 7.65829 12.8536 7.85355L8.85355 11.8536C8.65829 12.0488 8.34171 12.0488 8.14645 11.8536C7.95118 11.6583 7.95118 11.3417 8.14645 11.1464L11.2929 8H2.5C2.22386 8 2 7.77614 2 7.5C2 7.22386 2.22386 7 2.5 7H11.2929L8.14645 3.85355C7.95118 3.65829 7.95118 3.34171 8.14645 3.14645Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+        </a>
+    </div>
+</main>
+
+<script>
+    const getTheme = (name) => {
+        const themes = {
+            'Atlanta Hawks': { abbr: 'atl', color: '#e03a3e' },
+            'Boston Celtics': { abbr: 'bos', color: '#007A33' },
+            'Brooklyn Nets': { abbr: 'bkn', color: '#ffffff' },
+            'Charlotte Hornets': { abbr: 'cha', color: '#1D1160' },
+            'Chicago Bulls': { abbr: 'chi', color: '#CE1141' },
+            'Cleveland Cavaliers': { abbr: 'cle', color: '#bc034d' },
+            'Dallas Mavericks': { abbr: 'dal', color: '#00538C' },
+            'Denver Nuggets': { abbr: 'den', color: '#FDB927' },
+            'Detroit Pistons': { abbr: 'det', color: '#1D42BA' },
+            'Golden State Warriors': { abbr: 'gsw', color: '#1D428A' },
+            'Houston Rockets': { abbr: 'hou', color: '#CE1141' },
+            'Indiana Pacers': { abbr: 'ind', color: '#FDBB30' },
+            'LA Clippers': { abbr: 'lac', color: '#C8102E' },
+            'Los Angeles Clippers': { abbr: 'lac', color: '#C8102E' },
+            'Los Angeles Lakers': { abbr: 'lal', color: '#FDB927' },
+            'Memphis Grizzlies': { abbr: 'mem', color: '#5D76A9' },
+            'Miami Heat': { abbr: 'mia', color: '#98002E' },
+            'Milwaukee Bucks': { abbr: 'mil', color: '#00471B' },
+            'Minnesota Timberwolves': { abbr: 'min', color: '#78be20' },
+            'New Orleans Pelicans': { abbr: 'nop', color: '#85714D' },
+            'New York Knicks': { abbr: 'nyk', color: '#F58426' },
+            'Oklahoma City Thunder': { abbr: 'okc', color: '#007AC1' },
+            'Orlando Magic': { abbr: 'orl', color: '#0077C0' },
+            'Philadelphia 76ers': { abbr: 'phi', color: '#006BB6' },
+            'Phoenix Suns': { abbr: 'phx', color: '#E56020' },
+            'Portland Trail Blazers': { abbr: 'por', color: '#E03A3E' },
+            'Sacramento Kings': { abbr: 'sac', color: '#5A2D81' },
+            'San Antonio Spurs': { abbr: 'sas', color: '#c4ced4' },
+            'Toronto Raptors': { abbr: 'tor', color: '#CE1141' },
+            'Utah Jazz': { abbr: 'uta', color: '#F9A01B' },
+            'Washington Wizards': { abbr: 'was', color: '#002B5C' }
+        };
+        return themes[name] || { abbr: 'nba', color: '#3b82f6' };
+    };
+
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+
+    async function loadDashboard() {
+        try {
+            const [gamesResponse, statsResponse] = await Promise.all([
+                fetch('games.json', { cache: 'no-store' }),
+                fetch('stats.json', { cache: 'no-store' })
+            ]);
+
+            if (!gamesResponse.ok) throw new Error('games.json fehlt');
+            if (!statsResponse.ok) throw new Error('stats.json fehlt');
+
+            const games = await gamesResponse.json();
+            const stats = await statsResponse.json();
+
+            renderStats(stats);
+            renderGames(games);
+            document.getElementById('status').innerHTML = '<div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_#10b981]"></div> System Online';
+        } catch (error) {
+            document.getElementById('status').innerHTML = `<div class="w-2.5 h-2.5 bg-red-500 rounded-full"></div> Fehler: ${error.message}. Starte zuerst DashboardUpdater.`;
+        }
+    }
+
+    function renderStats(stats) {
+        document.getElementById('stat-total').innerText = stats.total ?? '-';
+        document.getElementById('stat-won').innerText = stats.won ?? '-';
+        document.getElementById('stat-rate').innerText = stats.rateLabel ?? `${stats.rate ?? '-'}%`;
+    }
+
+    function renderGames(games) {
+        const container = document.getElementById('today-games');
+        container.innerHTML = '';
+
+        if (!Array.isArray(games) || games.length === 0) {
+            container.innerHTML = '<div class="col-span-full text-center text-slate-500 font-bold tracking-widest mt-10">NO GAME DATA AVAILABLE.</div>';
+            return;
+        }
+
+        games.forEach((game, index) => {
+            const home = getTheme(game.home.name);
+            const away = getTheme(game.away.name);
+            const card = document.createElement('a');
+            card.href = `player-props.html?match=${home.abbr}-vs-${away.abbr}`;
+            card.className = 'prophet-card p-12 group cursor-pointer block';
+
+            const cleanTime = String(game.time || '').replace('..', '.').replace(' Uhr', '');
+            const probPercent = typeof game.prophetProb === 'number' ? `${Math.round(game.prophetProb)}%` : (game.propProb || '0%');
+            const edge = typeof game.edge === 'number' ? `${game.edge > 0 ? '+' : ''}${game.edge.toFixed(1)}%` : '-';
+
+            card.innerHTML = `
+                <div class="card-shadow-glow" style="background-color: ${home.color}"></div>
+                <div class="flex justify-between items-start mb-16">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]">${cleanTime}</span>
+                    ${game.valueBet ? '<div class="value-badge">High Value</div>' : ''}
+                </div>
+                <div class="flex items-center justify-between mb-20 relative">
+                    <div class="flex flex-col items-center w-[40%] transform group-hover:scale-110 transition-transform duration-700">
+                        <img src="https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/${home.abbr}.png" class="w-24 h-24 drop-shadow-[0_20px_20px_rgba(0,0,0,0.6)]" onerror="this.style.display='none'">
+                        <p class="text-[12px] font-black uppercase mt-6 tracking-tighter text-center">${game.home.name}</p>
+                    </div>
+                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-700 font-black italic text-3xl tracking-tighter opacity-30 select-none">VS</div>
+                    <div class="flex flex-col items-center w-[40%] transform group-hover:scale-110 transition-transform duration-700">
+                        <img src="https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/${away.abbr}.png" class="w-24 h-24 drop-shadow-[0_20px_20px_rgba(0,0,0,0.6)]" onerror="this.style.display='none'">
+                        <p class="text-[12px] font-black uppercase mt-6 tracking-tighter text-center">${game.away.name}</p>
+                    </div>
+                </div>
+                <div class="mt-auto">
+                    <div class="flex justify-between items-end mb-5">
+                        <div>
+                            <span class="block text-[11px] font-black text-slate-500 uppercase tracking-widest">Prophet Index</span>
+                            <span class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Edge ${edge}</span>
+                        </div>
+                        <span class="text-6xl font-black italic tracking-tighter leading-none">${probPercent}</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-fill" id="bar-${index}" style="background-color: ${home.color}; color: ${home.color}"></div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+
+            setTimeout(() => {
+                const bar = document.getElementById(`bar-${index}`);
+                if (bar) bar.style.width = probPercent;
+            }, 400 + (index * 150));
+        });
+    }
+</script>
+</body>
+</html>

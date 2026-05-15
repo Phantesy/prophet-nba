@@ -1,0 +1,40 @@
+[
+    {
+        "gameId": "745d265e0d83dac45060b44665d8cbe5",
+        "bookieProb": 63.7,
+        "edge": -2,
+        "valueBet": false,
+        "away": {
+            "name": "Detroit Pistons",
+            "ml": 2.45
+        },
+        "prophetProb": 61.7,
+        "prop": "Buchmacher: 63.7% | Prophet Engine: 61.7%",
+        "time": "Fr.. 23:10 Uhr",
+        "propProb": "62%",
+        "status": "Upcoming",
+        "home": {
+            "name": "Cleveland Cavaliers",
+            "ml": 1.57
+        }
+    },
+    {
+        "gameId": "1bd4432ce20bc61756180bf2d1c59c91",
+        "bookieProb": 35.7,
+        "edge": -2.2,
+        "valueBet": false,
+        "away": {
+            "name": "San Antonio Spurs",
+            "ml": 1.46
+        },
+        "prophetProb": 33.5,
+        "prop": "Buchmacher: 35.7% | Prophet Engine: 33.5%",
+        "time": "Sa.. 01:40 Uhr",
+        "propProb": "34%",
+        "status": "Upcoming",
+        "home": {
+            "name": "Minnesota Timberwolves",
+            "ml": 2.8
+        }
+    }
+]
