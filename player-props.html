@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROPHET // PLAYER PROPS</title>
+    <title>PROPHET // LIVE PLAYER PROPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
             --bg-top: #1a1c2e;
@@ -112,7 +113,7 @@
             transition: width 2s cubic-bezier(0.16, 1, 0.3, 1);
             box-shadow: 0 0 15px currentColor;
         }
-        .back-btn, .filter-btn, .select-box {
+        .back-btn, .filter-btn, .select-box, .stream-input {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -121,6 +122,7 @@
         .back-btn:hover, .filter-btn:hover, .filter-btn.active { background: white; color: black; transform: scale(1.03); }
         .select-box { color: white; }
         .select-box option { color: black; }
+        .stream-input:focus { outline: none; border-color: #3b82f6; background: rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -132,14 +134,36 @@
         Dashboard
     </a>
     <div class="text-right">
-        <h1 class="text-3xl font-black tracking-tighter italic">PLAYER <span class="text-blue-500 font-normal">/</span> PROPS</h1>
-        <p class="text-[8px] font-bold text-slate-500 tracking-[0.5em] uppercase mt-1" id="matchup-title">ALL MATCHUPS</p>
+        <h1 class="text-3xl font-black tracking-tighter italic">LIVE <span class="text-blue-500 font-normal">/</span> RADAR</h1>
+        <p class="text-[8px] font-bold text-slate-500 tracking-[0.5em] uppercase mt-1" id="last-update">CONNECTING TO ESPN...</p>
     </div>
 </header>
+
+<section class="max-w-7xl mx-auto px-10 pb-10">
+    <div class="bg-black/30 border border-white/10 rounded-[40px] p-8 backdrop-blur-xl shadow-2xl">
+        <div class="flex flex-col md:flex-row gap-4 mb-6">
+            <input type="text" id="stream-url" placeholder="Paste .m3u8 Stream URL here..." class="stream-input flex-1 rounded-2xl px-6 py-4 font-bold text-sm text-white placeholder-slate-500 tracking-wide">
+            <button id="load-stream-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-black text-[11px] uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.6)]">
+                Load Stream
+            </button>
+        </div>
+
+        <div class="relative w-full aspect-video bg-black rounded-3xl overflow-hidden border border-white/5 shadow-inner group">
+            <video id="nba-player" class="w-full h-full" controls></video>
+            <div id="video-overlay" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none bg-black/50 backdrop-blur-sm transition-opacity duration-500">
+                <svg class="w-16 h-16 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="text-slate-500 font-black uppercase tracking-[0.4em] text-sm">Waiting for Stream Source</span>
+            </div>
+        </div>
+    </div>
+</section>
 
 <section class="max-w-7xl mx-auto px-10 pb-10 flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
     <div class="flex flex-wrap gap-3" id="market-filters">
         <button class="filter-btn active px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="ALL">All</button>
+        <button class="filter-btn px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 border-red-500/30" data-filter="LIVE">
+            LIVE <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        </button>
         <button class="filter-btn px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="POINTS">Points</button>
         <button class="filter-btn px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="REBOUNDS">Rebounds</button>
         <button class="filter-btn px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest" data-filter="ASSISTS">Assists</button>
@@ -158,13 +182,44 @@
 </main>
 
 <script>
+    // --- STREAM PLAYER LOGIK ---
+    document.getElementById('load-stream-btn').addEventListener('click', () => {
+        const url = document.getElementById('stream-url').value.trim();
+        if (!url) return alert("Bitte füge eine .m3u8 URL ein!");
+
+        const video = document.getElementById('nba-player');
+        const overlay = document.getElementById('video-overlay');
+
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                overlay.style.opacity = '0';
+                video.play();
+            });
+            hls.on(Hls.Events.ERROR, function(event, data) {
+                if (data.fatal) alert("Fehler beim Laden des Streams. Link überprüfen!");
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Nativer Support (Apple Safari)
+            video.src = url;
+            video.addEventListener('loadedmetadata', function() {
+                overlay.style.opacity = '0';
+                video.play();
+            });
+        }
+    });
+
+    // --- DASHBOARD LOGIK ---
     const urlParams = new URLSearchParams(window.location.search);
     const matchParam = urlParams.get('match') || '';
     const playingTeams = matchParam ? matchParam.toLowerCase().split('-vs-') : [];
+
     let allProps = [];
+    let liveData = {};
     let activeFilter = 'ALL';
 
-    document.getElementById('matchup-title').innerText = matchParam ? matchParam.replace('-vs-', ' VS ').toUpperCase() : 'ALL MATCHUPS';
     document.addEventListener('DOMContentLoaded', init);
 
     async function init() {
@@ -177,28 +232,59 @@
             });
         });
         document.getElementById('sort-select').addEventListener('change', renderDashboard);
+
         await fetchData();
+        setInterval(fetchData, 30000); // 30s Live Sync
+    }
+
+    function getMarketAbbr(market) {
+        market = market.toUpperCase();
+        if(market.includes("POINT")) return "PTS";
+        if(market.includes("REBOUND")) return "REB";
+        if(market.includes("ASSIST")) return "AST";
+        return "PTS";
     }
 
     async function fetchData() {
         try {
-            const response = await fetch('props.json', { cache: 'no-store' });
+            const cacheBuster = new Date().getTime();
+
+            const response = await fetch('props.json?t=' + cacheBuster, { cache: 'no-store' });
             if (!response.ok) throw new Error('props.json fehlt');
             const data = await response.json();
             allProps = Array.isArray(data) ? data : [];
+
+            try {
+                const liveRes = await fetch('live.json?t=' + cacheBuster, { cache: 'no-store' });
+                if(liveRes.ok) liveData = await liveRes.json();
+            } catch(e) {}
+
+            const now = new Date();
+            document.getElementById('last-update').innerText = "LIVE SYNC: " + now.toLocaleTimeString();
+
             renderDashboard();
         } catch (error) {
-            document.getElementById('main-container').innerHTML = `<h2 class="text-red-500 text-center font-bold">Fehler: ${error.message}. Starte zuerst PlayerPropsPuller.</h2>`;
+            document.getElementById('main-container').innerHTML = `<h2 class="text-red-500 text-center font-bold">Fehler: ${error.message}.</h2>`;
         }
     }
 
     function getVisibleProps() {
         let props = [...allProps];
+
         if (playingTeams.length > 0) {
             props = props.filter(prop => playingTeams.includes(String(prop.teamAbbr || '').toLowerCase()));
         }
-        if (activeFilter === 'VALUE') props = props.filter(prop => prop.isValue);
-        else if (activeFilter !== 'ALL') props = props.filter(prop => String(prop.market || '').toUpperCase() === activeFilter);
+
+        if (activeFilter === 'VALUE') {
+            props = props.filter(prop => prop.isValue);
+        } else if (activeFilter === 'LIVE') {
+            props = props.filter(prop => {
+                const marketAbbr = getMarketAbbr(String(prop.market || ''));
+                return liveData[prop.playerName] && liveData[prop.playerName][marketAbbr] !== undefined;
+            });
+        } else if (activeFilter !== 'ALL') {
+            props = props.filter(prop => String(prop.market || '').toUpperCase() === activeFilter);
+        }
 
         const sortMode = document.getElementById('sort-select').value;
         props.sort((a, b) => {
@@ -217,19 +303,17 @@
         const data = getVisibleProps();
 
         if (data.length === 0) {
-            container.innerHTML = `<div class="text-center text-slate-500 font-bold tracking-widest mt-10">NO PROP DATA AVAILABLE.</div>`;
+            if (activeFilter === 'LIVE') {
+                container.innerHTML = `<div class="text-center text-slate-500 font-bold tracking-widest mt-10">NO ACTIVE GAMES RIGHT NOW.</div>`;
+            } else {
+                container.innerHTML = `<div class="text-center text-slate-500 font-bold tracking-widest mt-10">NO PROP DATA AVAILABLE.</div>`;
+            }
             return;
         }
 
         const section = document.createElement('div');
         section.className = 'mb-20';
         section.innerHTML = `
-            <div class="flex items-center justify-between mb-10">
-                <div class="flex items-center gap-4">
-                    <div class="h-[2px] w-12 bg-slate-800"></div>
-                    <h2 class="text-xs font-black text-slate-500 uppercase tracking-[0.4em]">${data.length} Predictions</h2>
-                </div>
-            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="props-grid"></div>
         `;
         container.appendChild(section);
@@ -256,6 +340,44 @@
         const teamAbbr = prop.teamAbbr || 'nba';
         const color = prop.color || '#3b82f6';
 
+        // LIVE STATS BERECHNUNG
+        const marketAbbr = getMarketAbbr(market);
+        let currentStat = 0;
+        let isLive = false;
+
+        if (liveData[prop.playerName] && liveData[prop.playerName][marketAbbr] !== undefined) {
+            currentStat = liveData[prop.playerName][marketAbbr];
+            isLive = true;
+        }
+
+        let livePercent = (currentStat / line) * 100;
+        if (livePercent > 100) livePercent = 100;
+
+        let liveHtml = '';
+        if (isLive) {
+            const isHit = currentStat >= line;
+            const statusColor = isHit ? 'bg-emerald-500' : 'bg-blue-500';
+            const statusText = isHit ? '✅ HIT!' : '🔥 LIVE ON COURT';
+            liveHtml = `
+            <div class="mt-4 bg-black/40 rounded-xl p-4 border ${isHit ? 'border-emerald-500/50' : 'border-blue-500/30'} backdrop-blur-md relative overflow-hidden">
+                ${isHit ? '<div class="absolute inset-0 bg-emerald-500/10 animate-pulse"></div>' : ''}
+                <div class="relative z-10">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black ${isHit ? 'text-emerald-400' : 'text-blue-400'} uppercase tracking-widest">${statusText}</span>
+                        <span class="text-lg font-black text-white">${currentStat} <span class="text-[10px] text-slate-400">/ ${line} ${marketAbbr}</span></span>
+                    </div>
+                    <div class="h-2 bg-black/60 rounded-full overflow-hidden border border-white/5">
+                        <div class="h-full ${statusColor} transition-all duration-1000 ease-out" style="width: ${livePercent}%; box-shadow: 0 0 10px currentColor;"></div>
+                    </div>
+                </div>
+            </div>`;
+        } else {
+             liveHtml = `
+             <div class="mt-4 bg-black/20 rounded-xl p-3 border border-white/5 text-center">
+                 <span class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Wartet auf Tip-Off</span>
+             </div>`;
+        }
+
         card.innerHTML = `
             <div class="card-glow" style="background-color: ${color}"></div>
             <img src="https://a.espncdn.com/i/headshots/nba/players/full/${playerId}.png" class="player-img" alt="${escapeHtml(prop.playerName)}" onerror="this.style.display='none'">
@@ -280,15 +402,15 @@
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-2 mb-6 text-center">
-                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3">
+                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3 shadow-inner">
                         <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest">L5</p>
                         <p class="text-sm font-black">${l5Stat}</p>
                     </div>
-                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3">
+                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3 shadow-inner">
                         <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest">Season</p>
                         <p class="text-sm font-black">${seasonStat}</p>
                     </div>
-                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3">
+                    <div class="bg-white/5 border border-white/5 rounded-2xl p-3 shadow-inner">
                         <p class="text-[8px] text-slate-500 font-black uppercase tracking-widest">Proj</p>
                         <p class="text-sm font-black">${projected}</p>
                     </div>
@@ -299,19 +421,20 @@
                             <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Hit Prob.</span>
                             <span class="block text-[10px] font-black ${edge >= 0 ? 'text-emerald-300' : 'text-red-300'} uppercase tracking-widest">Edge ${edge >= 0 ? '+' : ''}${edge.toFixed(1)}%</span>
                         </div>
-                        <span class="text-4xl font-black italic tracking-tighter leading-none">${probText}</span>
+                        <span class="text-4xl font-black italic tracking-tighter leading-none text-white">${probText}</span>
                     </div>
-                    <div class="bar-container mb-4">
+                    <div class="bar-container">
                         <div class="bar-fill" id="bar-${index}" style="width: 0%; background-color: ${color}; color: ${color}"></div>
                     </div>
+                    ${liveHtml}
                 </div>
             </div>
         `;
 
         setTimeout(() => {
-            const bar = document.getElementById(`bar-${index}`);
+            const bar = card.querySelector(`#bar-${index}`);
             if (bar) bar.style.width = `${Math.min(100, Math.max(0, prob))}%`;
-        }, 400 + (index * 60));
+        }, 100);
 
         return card;
     }
